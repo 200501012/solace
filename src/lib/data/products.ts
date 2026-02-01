@@ -158,17 +158,51 @@ export const getProductsListByCollectionId = async function ({
 }
 
 export const getStoreFilters = async function () {
-  const filters: ProductFilters = await fetch(
-    `${BACKEND_URL}/store/filter-product-attributes`,
-    {
+  const emptyFilters: ProductFilters = {
+    collection: [],
+    type: [],
+    material: [],
+  }
+
+  if (!BACKEND_URL || !PUBLISHABLE_API_KEY) {
+    console.error(
+      'Missing NEXT_PUBLIC_MEDUSA_BACKEND_URL or NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY'
+    )
+    return emptyFilters
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/store/filter-product-attributes`, {
       headers: {
-        'x-publishable-api-key': PUBLISHABLE_API_KEY!,
+        'x-publishable-api-key': PUBLISHABLE_API_KEY,
       },
       next: {
         revalidate: 3600,
       },
-    }
-  ).then((res) => res.json())
+    })
 
-  return filters
+    if (!res.ok) {
+      if (res.status !== 404) {
+        console.error(
+          `Failed to fetch filters: ${res.status} ${res.statusText}`
+        )
+      }
+      return emptyFilters
+    }
+
+    const contentType = res.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const body = await res.text()
+      console.error(
+        `Expected JSON from ${BACKEND_URL}/store/filter-product-attributes but got ${contentType || 'unknown content type'}: ${body.slice(0, 200)}`
+      )
+      return emptyFilters
+    }
+
+    const filters = (await res.json()) as ProductFilters
+    return filters
+  } catch (error) {
+    console.error('Error fetching filters', error)
+    return emptyFilters
+  }
 }

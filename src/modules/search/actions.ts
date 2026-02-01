@@ -107,7 +107,13 @@ export async function search({
   )
 
   if (!response.ok) {
-    throw new Error(`Response error. Status: ${response.status}`)
+    if (response.status !== 404) {
+      console.error(`Response error. Status: ${response.status}`)
+    }
+    return {
+      results: [],
+      count: 0,
+    }
   }
 
   const data = await response.json()

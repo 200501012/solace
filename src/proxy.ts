@@ -77,7 +77,14 @@ function getCountryCode(
 
     return countryCode
   } catch (error) {
-    throw new Error('Error getting the country code', error)
+    console.error('Error getting the country code', error)
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unknown error while getting the country code'
+    throw new Error(`Error getting the country code: ${message}`, {
+      cause: error instanceof Error ? error : undefined,
+    })
   }
 }
 
